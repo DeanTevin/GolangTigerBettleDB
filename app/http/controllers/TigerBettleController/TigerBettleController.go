@@ -32,8 +32,8 @@ func (r *TigerBettleController) PostCreateUserTB(ctx http.Context) http.Response
 		return ctx.Response().Status(406).Json(err)
 	}
 
-	result, errors := tbAccount.TigerBettleAccountAction().CreateUserHistory(ctx)
-	
+	result, errors := tbAccount.TigerBettleAccountAction().CreateUserHistory(request)
+
 	if errors != nil {
 		return ctx.Response().Status(500).Json(http.Json{
 			"Error": errors.Error(),

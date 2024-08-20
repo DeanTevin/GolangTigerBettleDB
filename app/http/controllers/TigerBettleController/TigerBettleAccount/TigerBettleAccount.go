@@ -1,10 +1,9 @@
 package TigerBettleAccount
 
 import (
+	tbRequests "goravel/app/requests/TigerBettleRequest"
 	tbService "goravel/app/service/TigerBettle"
-	"strconv"
 
-	"github.com/goravel/framework/contracts/http"
 	tbTypes "github.com/tigerbeetle/tigerbeetle-go/pkg/types"
 )
 
@@ -18,11 +17,19 @@ func TigerBettleAccountAction() *TigerBettleAccount {
 	}
 }
 
-func (r *TigerBettleAccount) CreateUserHistory(ctx http.Context) ([]map[string]string, error) {
-	id, _ := strconv.Atoi(ctx.Request().Input("id"))
-	ledger, _ := strconv.Atoi(ctx.Request().Input("ledger"))
-	code, _ := strconv.Atoi(ctx.Request().Input("code"))
-	UUID, err := tbService.NewTigerBettleService().ConvertUUIDString(ctx.Request().Input("uuid"))
+func (r *TigerBettleAccount) SanitizeInput(request tbRequests.CreateUserHistoryRequest) (ID int, Ledger int, Code int, UUID [16]byte, errs error) {
+	uuid, err := tbService.NewTigerBettleService().ConvertUUIDString(request.UUID)
+
+	if err != nil {
+		return 0, 0, 0, [16]byte{}, err
+	}
+
+	return request.ID, request.Ledger, request.Code, uuid, nil
+}
+
+func (r *TigerBettleAccount) CreateUserHistory(request tbRequests.CreateUserHistoryRequest) ([]map[string]string, error) {
+
+	id, ledger, code, UUID, err := r.SanitizeInput(request)
 
 	if err != nil {
 		return nil, err

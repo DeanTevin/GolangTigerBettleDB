@@ -6,7 +6,7 @@ import (
 )
 
 type CreateUserHistoryRequest struct {
-	ID     string `form:"id" json:"id"`
+	ID     int    `form:"id" json:"id"`
 	Ledger int    `form:"ledger" json:"ledger"`
 	Code   int    `form:"code" json:"code"`
 	UUID   string `form:"uuid" json:"uuid"`
