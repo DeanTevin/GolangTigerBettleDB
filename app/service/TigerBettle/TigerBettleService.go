@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 
@@ -90,4 +91,49 @@ func (r *TigerBettleService) ConvertBytesToUUIDString(uuid [16]byte) string {
 		hexStr[20:])   // 12 characters
 
 	return formattedUUID
+}
+
+func (r *TigerBettleService) CreateAccounts(payloadData []tbTypes.Account) ([]map[string]string, error) {
+
+	client, err := r.GetClient()
+
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := client.CreateAccounts(payloadData)
+
+	if err != nil {
+		return nil, err
+	}
+
+	for _, err := range res {
+		return nil, errors.New(err.Result.String())
+	}
+
+	accounts, err := client.LookupAccounts([]tbTypes.Uint128{
+		payloadData[0].ID,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	var result []map[string]string
+
+	for _, account := range accounts {
+		accountMap := map[string]string{
+			"id":     account.ID.String(),
+			"ledger": strconv.FormatUint(uint64(account.Ledger), 10),
+			"code":   strconv.FormatUint(uint64(account.Code), 10),
+			"uuid":   account.UserData128.String(),
+		}
+
+		// Append the map to the result slice
+		result = append(result, accountMap)
+	}
+
+	client.Close() //close connection
+
+	return result, nil
 }
