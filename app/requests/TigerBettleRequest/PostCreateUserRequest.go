@@ -6,10 +6,11 @@ import (
 )
 
 type CreateUserHistoryRequest struct {
-	ID     int    `form:"id" json:"id"`
-	Ledger int    `form:"ledger" json:"ledger"`
-	Code   int    `form:"code" json:"code"`
-	UUID   string `form:"uuid" json:"uuid"`
+	ID     int      `form:"id" json:"id"`
+	Ledger int      `form:"ledger" json:"ledger"`
+	Code   int      `form:"code" json:"code"`
+	UUID   string   `form:"uuid" json:"uuid"`
+	Flags  []string `form:"flags" json:"flags"`
 }
 
 func (r *CreateUserHistoryRequest) Authorize(ctx http.Context) error {
@@ -23,6 +24,7 @@ func (r *CreateUserHistoryRequest) Rules(ctx http.Context) map[string]string {
 		"ledger": "required|number",
 		"code":   "required|number",
 		"uuid":   "required|string",
+		"flags":  "array",
 	}
 }
 
