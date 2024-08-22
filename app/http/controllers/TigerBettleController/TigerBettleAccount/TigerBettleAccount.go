@@ -19,7 +19,7 @@ func TigerBettleAccountAction() *TigerBettleAccount {
 	}
 }
 
-func SanitizeInput(request tbRequests.CreateUserHistoryRequest) ([]tbTypes.Account, error) {
+func CreateUserAccountSanitizeInput(request tbRequests.CreateUserHistoryRequest) ([]tbTypes.Account, error) {
 	uuid, err := tbService.NewTigerBettleService().ConvertUUIDString(request.UUID)
 
 	if err != nil {
@@ -34,6 +34,25 @@ func SanitizeInput(request tbRequests.CreateUserHistoryRequest) ([]tbTypes.Accou
 			Flags:       MapAccountFlags(request.Flags),
 			UserData128: tbTypes.BytesToUint128(uuid),
 		},
+	}
+
+	return payloadData, nil
+}
+
+func QueryAccountsSanitizeInput(request tbRequests.QueryFilterUserRequest) (tbTypes.QueryFilter, error) {
+	uuid, err := tbService.NewTigerBettleService().ConvertUUIDString(request.UUID)
+
+	if err != nil {
+		return tbTypes.QueryFilter{}, err
+	}
+
+	payloadData := tbTypes.QueryFilter{
+
+		Ledger:      uint32(request.Ledger),
+		Code:        uint16(request.Code),
+		Flags:       uint32(MapAccountFlags(request.Flags)),
+		UserData128: tbTypes.BytesToUint128(uuid),
+		Limit:       uint32(100),
 	}
 
 	return payloadData, nil
@@ -67,13 +86,91 @@ func contains(slice []string, value string) bool {
 	return false
 }
 
-func (r *TigerBettleAccount) CreateUserHistory(request tbRequests.CreateUserHistoryRequest) ([]map[string]string, error) {
+func (r *TigerBettleAccount) CreateUserAccount(request tbRequests.CreateUserHistoryRequest) ([]map[string]string, error) {
 
-	payloadData, err := SanitizeInput(request)
+	//sanitize input first
+	payloadData, err := CreateUserAccountSanitizeInput(request)
+	if err != nil {
+		return nil, err
+	}
+
+	//connect to client
+	client, err := tbService.NewTigerBettleService().GetClient()
+	if err != nil {
+		return nil, err
+	}
+
+	//create account
+	_, err = tbService.NewTigerBettleService().CreateAccounts(payloadData, client)
 
 	if err != nil {
 		return nil, err
 	}
 
-	return tbService.NewTigerBettleService().CreateAccounts(payloadData)
+	//lookup created account
+	accounts, err := tbService.NewTigerBettleService().LookupAccounts([]tbTypes.Uint128{
+		payloadData[0].ID,
+	}, client)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var result []map[string]string
+
+	// mapping result from lookup account
+	for _, account := range accounts {
+		accountMap := map[string]string{
+			"id":     strconv.FormatUint(tbService.NewTigerBettleService().HexStringToUint(account.ID.String()), 10),
+			"ledger": strconv.FormatUint(uint64(account.Ledger), 10),
+			"code":   strconv.FormatUint(uint64(account.Code), 10),
+			"uuid":   tbService.NewTigerBettleService().ConvertBytesToUUIDString(account.UserData128.Bytes()),
+		}
+
+		// Append the map to the result slice
+		result = append(result, accountMap)
+	}
+
+	// client close
+	client.Close()
+
+	return result, nil
+}
+
+func (r *TigerBettleAccount) QueryUserAccounts(request tbRequests.QueryFilterUserRequest) ([]map[string]string, error) {
+
+	client, err := tbService.NewTigerBettleService().GetClient()
+
+	if err != nil {
+		return nil, err
+	}
+
+	QueryFilter, _ := QueryAccountsSanitizeInput(request)
+	QueryFilter.Limit = 100
+
+	accounts, err := tbService.NewTigerBettleService().QueryAccounts(QueryFilter, client)
+
+	if err != nil {
+		return nil, err
+	}
+
+	var result []map[string]string
+
+	//mapping result from query account
+	for _, account := range accounts {
+		accountMap := map[string]string{
+			"id":     strconv.FormatUint(tbService.NewTigerBettleService().HexStringToUint(account.ID.String()), 10),
+			"ledger": strconv.FormatUint(uint64(account.Ledger), 10),
+			"code":   strconv.FormatUint(uint64(account.Code), 10),
+			"uuid":   tbService.NewTigerBettleService().ConvertBytesToUUIDString(account.UserData128.Bytes()),
+		}
+
+		// Append the map to the result slice
+		result = append(result, accountMap)
+	}
+
+	//close client connection
+	client.Close()
+
+	return result, nil
 }

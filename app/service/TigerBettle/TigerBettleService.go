@@ -93,13 +93,18 @@ func (r *TigerBettleService) ConvertBytesToUUIDString(uuid [16]byte) string {
 	return formattedUUID
 }
 
-func (r *TigerBettleService) CreateAccounts(payloadData []tbTypes.Account) ([]map[string]string, error) {
-
-	client, err := r.GetClient()
-
+func (r *TigerBettleService) HexStringToUint(hexStr string) uint64 {
+	// Parse the hexadecimal string to a uint64
+	uint64Value, err := strconv.ParseUint(hexStr, 16, 64)
 	if err != nil {
-		return nil, err
+		return 0
 	}
+
+	// Convert uint64 to uint (may be uint32 or uint64 depending on architecture)
+	return uint64(uint64Value)
+}
+
+func (r *TigerBettleService) CreateAccounts(payloadData []tbTypes.Account, client tb.Client) ([]tbTypes.AccountEventResult, error) {
 
 	res, err := client.CreateAccounts(payloadData)
 
@@ -111,29 +116,37 @@ func (r *TigerBettleService) CreateAccounts(payloadData []tbTypes.Account) ([]ma
 		return nil, errors.New(err.Result.String())
 	}
 
-	accounts, err := client.LookupAccounts([]tbTypes.Uint128{
-		payloadData[0].ID,
-	})
+	return res, nil
+}
+
+func (r *TigerBettleService) LookupAccounts(payloadData []tbTypes.Uint128, client tb.Client) ([]tbTypes.Account, error) {
+
+	//lookup accounts by ID
+	accounts, err := client.LookupAccounts(payloadData)
+
+	if err != nil {
+		return []tbTypes.Account{}, err
+	}
+
+	return accounts, nil
+}
+
+func (r *TigerBettleService) QueryAccounts(payloadData tbTypes.QueryFilter, client tb.Client) ([]tbTypes.Account, error) {
+	accounts, err := client.QueryAccounts(payloadData)
 
 	if err != nil {
 		return nil, err
 	}
 
-	var result []map[string]string
+	return accounts, nil
+}
 
-	for _, account := range accounts {
-		accountMap := map[string]string{
-			"id":     account.ID.String(),
-			"ledger": strconv.FormatUint(uint64(account.Ledger), 10),
-			"code":   strconv.FormatUint(uint64(account.Code), 10),
-			"uuid":   account.UserData128.String(),
-		}
+func (r *TigerBettleService) AccountBalances(payloadData tbTypes.AccountFilter, client tb.Client) ([]tbTypes.AccountBalance, error) {
+	balance, err := client.GetAccountBalances(payloadData)
 
-		// Append the map to the result slice
-		result = append(result, accountMap)
+	if err != nil {
+		return nil, err
 	}
 
-	client.Close() //close connection
-
-	return result, nil
+	return balance, nil
 }
