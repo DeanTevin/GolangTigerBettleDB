@@ -56,3 +56,21 @@ func (r *TigerBettleController) QueryUserTB(ctx http.Context) http.Response {
 
 	return ctx.Response().Success().Json(result)
 }
+
+func (r *TigerBettleController) AccountBalances(ctx http.Context) http.Response {
+	var request tbRequests.GetBalanceRequest
+	errorval := r.validationHelper.TestValidateRequest(&request, ctx)
+	if errorval != nil {
+		return ctx.Response().Status(406).Json(errorval)
+	}
+
+	result, err := tbAccount.TigerBettleBalanceAction().AccountBalance(request)
+
+	if err != nil {
+		return ctx.Response().Status(500).Json(http.Json{
+			"Error": err.Error(),
+		})
+	}
+
+	return ctx.Response().Success().Json(result)
+}
