@@ -74,3 +74,25 @@ func (r *TigerBettleController) AccountBalances(ctx http.Context) http.Response 
 
 	return ctx.Response().Success().Json(result)
 }
+
+func (r *TigerBettleController) QueryTransfers(ctx http.Context) http.Response {
+	var request tbRequests.QueryTransferRequest
+	errorval := r.validationHelper.TestValidateRequest(&request, ctx)
+	if errorval != nil {
+		return ctx.Response().Status(406).Json(errorval)
+	}
+
+	result, err := tbAccount.TigerBettleTransferAction().QueryTransfer(request)
+
+	if err != nil {
+		return ctx.Response().Status(500).Json(http.Json{
+			"Error": err.Error(),
+		})
+	}
+
+	if result == nil {
+		return ctx.Response().Status(204).Json(result)
+	}
+
+	return ctx.Response().Success().Json(result)
+}

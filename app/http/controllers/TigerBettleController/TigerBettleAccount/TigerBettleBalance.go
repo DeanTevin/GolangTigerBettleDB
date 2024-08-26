@@ -21,10 +21,7 @@ func TigerBettleBalanceAction() *TigerBettleAccount {
 
 func AccountBalanceSanitizeInput(request tbRequests.GetBalanceRequest) (tbTypes.AccountFilter, error) {
 
-	id, err := tbTypes.HexStringToUint128(strconv.Itoa(request.ID))
-	if err != nil {
-		return tbTypes.AccountFilter{}, err
-	}
+	id := tbTypes.ToUint128(uint64(request.ID))
 
 	payloadData := tbTypes.AccountFilter{
 

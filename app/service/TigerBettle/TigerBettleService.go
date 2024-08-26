@@ -93,6 +93,19 @@ func (r *TigerBettleService) ConvertBytesToUUIDString(uuid [16]byte) string {
 	return formattedUUID
 }
 
+func (r *TigerBettleService) ConvertTimestampToString(Timestamp uint64) string {
+	return time.Unix(int64(Timestamp/1e9), int64(Timestamp%1e9)).Format("2006-01-02 15:04:05")
+}
+
+func (r *TigerBettleService) ConvertTimestampString(Timestamp string) uint64 {
+	timeObject, err := time.Parse("2006-01-02 15:04:05", Timestamp)
+	if err != nil {
+		return 0
+	}
+	
+	return uint64(timeObject.Add(time.Hour * time.Duration(-facades.Config().GetInt("tigerbettle.utc_timeformat"))).UnixNano())
+}
+
 func (r *TigerBettleService) HexStringToUint(hexStr string) uint64 {
 	// Parse the hexadecimal string to a uint64
 	uint64Value, err := strconv.ParseUint(hexStr, 16, 64)
@@ -149,4 +162,14 @@ func (r *TigerBettleService) AccountBalances(payloadData tbTypes.AccountFilter, 
 	}
 
 	return balance, nil
+}
+
+func (r *TigerBettleService) QueryTransfer(payloadData tbTypes.QueryFilter, client tb.Client) ([]tbTypes.Transfer, error) {
+	transaction, err := client.QueryTransfers(payloadData)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return transaction, nil
 }

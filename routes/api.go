@@ -15,4 +15,5 @@ func Api() {
 	facades.Route().Post("/test/create-tb-user", TigerBettleController.PostCreateUserTB)
 	facades.Route().Post("/test/query-user", TigerBettleController.QueryUserTB)
 	facades.Route().Get("/test/account-balance", TigerBettleController.AccountBalances)
+	facades.Route().Post("/test/query-transfer", TigerBettleController.QueryTransfers)
 }
